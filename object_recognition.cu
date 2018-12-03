@@ -37,7 +37,7 @@ __global__ void kernel(unsigned char* input, unsigned char* search, unsigned cha
 		int index = yIndex * inputStep + xIndex;
 		unsigned long long int SAD = 0;
 
-		//output[index] = 0;
+		output[index] = 0;
 
 		// check every pixel of actual image with the template image
 		// loop through the template image
@@ -48,9 +48,10 @@ __global__ void kernel(unsigned char* input, unsigned char* search, unsigned cha
 				int searchIndex = t_j * searchStep + t_i;
 
 				SAD += powf(fabsf(int(input[inputIndex]) - int(search[searchIndex])), 2);
-				//output[index] += powf(fabsf(int(input[inputIndex]) - int(search[searchIndex])), 2);
 			}
 		}
+
+		output[index] = SAD;
 
 		__syncthreads();
 
@@ -68,7 +69,7 @@ __global__ void kernel(unsigned char* input, unsigned char* search, unsigned cha
 void objReconGPU(const Mat& input, const Mat& search, int& posX, int& posY, int& sadlock) {
 
 	Mat output(input.rows, input.cols, CV_32S);
-	output = 9999999;
+	output = 0;
 
 	unsigned long long int minsad = 9999999999999999999;
 	unsigned long long int sad = 0;
@@ -153,18 +154,20 @@ void objReconGPU(const Mat& input, const Mat& search, int& posX, int& posY, int&
 
 	/*int minLocX = 0;
 	int minLocY = 0;
-	unsigned long long int tempVal = 0;
+	auto tempVal = output.at<int>(0, 0);
 
 	for (int i = 0; i < output.rows - search.rows; i++) {
 		for (int j = 0; j < output.cols - search.cols; j++) {
-			if ((unsigned long long int)output.at<int>(i, j) > tempVal) {
-				tempVal = (unsigned long long int)output.at<int>(i, j);
+			if (output.at<int>(i, j) < tempVal) {
+				tempVal = output.at<int>(i, j);
 				minLocX = j;
 				minLocY = i;
 				cout << tempVal << " " << minLocX << " " << minLocY << endl;
 			}
 		}
-	}*/
+	}
+
+	cout << output.at<int>(446, 1525) << " " << output.at<int>(1525, 446) << " " << endl;*/
 
 	posX = xloc;
 	posY = yloc;
@@ -173,7 +176,7 @@ void objReconGPU(const Mat& input, const Mat& search, int& posX, int& posY, int&
 
 void objReconOpenMP(const Mat& input, const Mat& search, int& posX, int& posY, int& sadlock) {
 	unsigned long long int minSAD = 9999999999999999999;
-	long long int SAD = 0;
+	unsigned long long int SAD = 0;
 	int xloc = 0, yloc = 0, sadloc = 0;
 	int a_i, a_j, t_j, t_i;
 
